@@ -13,11 +13,6 @@
 1. [Overview](#overview)
 2. [Architecture](#architecture)
 3. [Deployment Instructions](#deployment-instructions)
-4. [Red Team Walkthrough (Attack Path)](#red-team-walkthrough)
-5. [Blue Team Walkthrough (Forensics)](#blue-team-walkthrough)
-6. [Flag Summary](#flag-summary)
-7. [Troubleshooting](#troubleshooting)
-
 ---
 
 ## Overview
