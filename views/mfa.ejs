@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>MFA Verification</h1>
+            <p class="subtitle">Multi-Factor Authentication Required</p>
+        </header>
+
+        <nav>
+            <a href="/">Home</a>
+            <a href="/feedback">Submit Feedback</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/mfa" class="active">MFA Login</a>
+        </nav>
+
+        <main>
+            <section class="card">
+                <h2>Enter MFA Code</h2>
+                <p>Please enter the 6-digit code from your authenticator app.</p>
+
+                <form id="mfa-form">
+                    <div class="form-group">
+                        <label for="mfa-code">MFA Code:</label>
+                        <input type="text" id="mfa-code" name="code" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}">
+                    </div>
+                    <button type="submit" class="btn">Verify</button>
+                </form>
+
+                <div id="result" style="display:none;"></div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 Admin Feedback System - Internal Use Only</p>
+        </footer>
+    </div>
+
+    <script>
+        (function() {
+            var c = document.cookie.split('; ');
+            for (var i = 0; i < c.length; i++) {
+                if (c[i].indexOf('adm_sess=') === 0) {
+                    var a = document.querySelectorAll('a');
+                    for (var j = 0; j < a.length; j++) {
+                        if (a[j].getAttribute('href') === '/mfa') { a[j].style.display = 'none'; }
+                    }
+                    break;
+                }
+            }
+        })();
+        document.getElementById('mfa-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var code = document.getElementById('mfa-code').value;
+            fetch('/api/verify-mfa', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code })
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                var rd = document.getElementById('result');
+                rd.style.display = 'block';
+                if (data.success) {
+                    rd.className = 'success-box';
+                    rd.innerHTML = '<strong>Success!</strong> ' + data.message;
+                    setTimeout(function() { window.location.href = '/dashboard'; }, 1500);
+                } else {
+                    rd.className = 'error-box';
+                    rd.innerHTML = '<strong>Error:</strong> ' + (data.message || 'Verification failed');
+                }
+            }).catch(function(e) {
+                var rd = document.getElementById('result');
+                rd.style.display = 'block';
+                rd.className = 'error-box';
+                rd.innerHTML = '<strong>Error:</strong> ' + e;
+            });
+        });
+    </script>
+</body>
+</html>

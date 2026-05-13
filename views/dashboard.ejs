@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Admin Dashboard</h1>
+            <p class="subtitle">Administrative Control Panel</p>
+        </header>
+
+        <nav>
+            <a href="/">Home</a>
+            <a href="/feedback">Submit Feedback</a>
+            <a href="/dashboard" class="active">Dashboard</a>
+            <a href="/mfa">MFA Login</a>
+        </nav>
+
+        <main>
+            <section class="card">
+                <h2>Dashboard Overview</h2>
+                <p>Welcome to the administration dashboard. Manage feedback submissions and system settings.</p>
+                <% if (mfaBypassed) { %>
+                <div class="info-box warning">
+                    <strong>⚠ Security Alert:</strong> MFA verification was bypassed via session replay. The endpoint <code>/api/verify-mfa</code> was never reached.
+                </div>
+                <% } %>
+            </section>
+
+            <% if (reflectedPayload) { %>
+            <section class="card">
+                <h3>Reflected Content</h3>
+                <div class="payload-container">
+                    <%- reflectedPayload %>
+                </div>
+            </section>
+            <% } %>
+
+            <section class="card">
+                <h3>Recent Feedback Submissions</h3>
+                <div id="feedback-list">
+                    <% if (feedbackStore && feedbackStore.length > 0) { %>
+                    <table class="feedback-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Feedback Content</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% feedbackStore.forEach(function(f) { %>
+                            <tr>
+                                <td><%= f.id %></td>
+                                <td>
+                                    <!-- XSS vulnerability: feedback rendered raw (unescaped) -->
+                                    <!-- FLAG: SCENARIO75{xss-payload} - CSS class for reflected content -->
+                                    <span class="xss-payload"><%- f.content %></span>
+                                </td>
+                                <td><%= f.timestamp ? f.timestamp.replace('T', ' ').substring(0, 19) : 'N/A' %></td>
+                            </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                    <p class="total-count"><em>Total feedbacks stored: <%= feedbackStore.length %></em></p>
+                    <% } else { %>
+                    <p>No feedback submissions yet. Be the first to submit!</p>
+                    <% } %>
+                </div>
+            </section>
+
+            <!-- Final Red Team Flag - Deep within the dashboard -->
+            <section class="card flag-card">
+                <h3>🔐 System Configuration</h3>
+                <div class="info-box">
+                    <ul>
+                        <li><strong>Session ID:</strong> <%= admSession %></li>
+                        <li><strong>MFA Status:</strong> <%= mfaBypassed ? 'Bypassed (Session Replay Detected)' : 'Verified' %></li>
+                        <li><strong>Access Level:</strong> Administrator</li>
+                        <li><strong>System Key:</strong> <span class="flag-text"><strong><%= finalFlag %></strong></span></li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 Admin Feedback System - Internal Use Only</p>
+        </footer>
+    </div>
+
+    <script>
+        (function() {
+            var c = document.cookie.split('; ');
+            for (var i = 0; i < c.length; i++) {
+                if (c[i].indexOf('adm_sess=') === 0) {
+                    var a = document.querySelectorAll('a');
+                    for (var j = 0; j < a.length; j++) {
+                        if (a[j].getAttribute('href') === '/mfa') { a[j].style.display = 'none'; }
+                    }
+                    break;
+                }
+            }
+        })();
+    </script>
+</body>
+</html>

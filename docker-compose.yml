@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  cyber-lab:
+    build: .
+    container_name: admin-feedback-system
+    ports:
+      - "3075:3075"    
+      - "2275:2275"    
+    volumes:
+      - ./logs:/opt/admin/logs          
+      - ./scripts:/app/scripts:ro       
+    environment:
+      - NODE_ENV=production
+      - LOG_DIR=/opt/admin/logs
+    restart: unless-stopped
+    networks:
+      - cyber-range-net
+
+networks:
+  cyber-range-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.14.0/24

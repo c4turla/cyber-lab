@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <!-- 
+        ╔═══════════════════════════════════════════╗
+        ║   _____          _                        ║
+        ║  / ____|        | |                       ║
+        ║ | (___  ___  ___| |_ ___  _ __            ║
+        ║  \___ \/ _ \/ __| __/ _ \| '__|           ║
+        ║  ____) |  __/ (__| || (_) | |              ║
+        ║ |_____/ \___|\___|\__\___/|_|              ║
+        ║                                           ║
+        ║  Hint: Have you checked the robots.txt?   ║
+        ║  FLAG: SCENARIO75{robots.txt}             ║
+        ╚═══════════════════════════════════════════╝
+    -->
+
+    <div class="container">
+        <header>
+            <h1>Admin Feedback System</h1>
+            <p class="subtitle">Corporate Internal Feedback Portal</p>
+        </header>
+
+        <nav>
+            <a href="/" class="active">Home</a>
+            <a href="/feedback">Submit Feedback</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/mfa">MFA Login</a>
+        </nav>
+
+        <main>
+            <section class="card">
+                <h2>Welcome to the Admin Feedback System</h2>
+                <p>This is the internal feedback portal for corporate employees. Use this system to submit feedback, suggestions, and report issues to the administration team.</p>
+                
+                <div class="cta-buttons">
+                    <a href="/feedback" class="btn">Submit Feedback</a>
+                    <a href="/mfa" class="btn btn-secondary">Login with MFA</a>
+                </div>
+            </section>
+
+            <section class="card">
+                <h3>Recent Announcements</h3>
+                <p><em>Security Update: Multi-factor authentication has been enabled for all administrative access. Please ensure your mobile device is registered.</em></p>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 Admin Feedback System - Internal Use Only</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide MFA Login menu if user has admin session
+            var c = document.cookie.split('; ');
+            var loggedIn = false;
+            for (var i = 0; i < c.length; i++) {
+                if (c[i].indexOf('adm_sess=') === 0) { loggedIn = true; break; }
+            }
+            if (loggedIn) {
+                var a = document.querySelectorAll('a');
+                for (var i = 0; i < a.length; i++) {
+                    if (a[i].getAttribute('href') === '/mfa') { a[i].style.display = 'none'; }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
