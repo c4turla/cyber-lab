@@ -57,9 +57,7 @@
                             <tr>
                                 <td><%= f.id %></td>
                                 <td>
-                                    <!-- XSS vulnerability: feedback rendered raw (unescaped) -->
-                                    <!-- FLAG: SCENARIO75{xss-payload} - CSS class for reflected content -->
-                                    <span class="xss-payload"><%- f.content %></span>
+                                    <span class="SCENARIO75{xss-payload}"><%- f.content %></span>
                                 </td>
                                 <td><%= f.timestamp ? f.timestamp.replace('T', ' ').substring(0, 19) : 'N/A' %></td>
                             </tr>

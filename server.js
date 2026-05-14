@@ -7,7 +7,6 @@ const app = express();
 
 // ============================================
 // In-memory feedback storage
-// FLAG: SCENARIO75{feedback_store}
 // ============================================
 let feedbackStore = [];
 const MAX_FEEDBACK_STORE = 100;
@@ -61,11 +60,10 @@ app.use(express.static('public'));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// ============================================
-// PHASE 1: Reconnaissance - Headers & Clues
-// ============================================
+// Phase 1: Reconnaissance - Headers & Clues
 
-// X-Powered-By header exposing Node.js (FLAG: SCENARIO75{Node.js})
+// X-Powered-By header naturally exposes the backend technology
+// Red Team answer: the value of this header
 app.use((req, res, next) => {
     res.setHeader('X-Powered-By', 'SCENARIO75{Node.js}');
     res.setHeader('X-Framework', 'Express');
@@ -79,9 +77,8 @@ app.use((req, res, next) => {
 app.get('/robots.txt', (req, res) => {
     res.type('text/plain');
     res.send(`User-agent: *
-Disallow: /api/verify-mfa
-Disallow: /dashboard
-Disallow: /admin
+Disallow: SCENARIO75{/api/verify-mfa}
+Disallow: SCENARIO75{/dashboard}
 `);
 });
 
@@ -93,12 +90,15 @@ app.use((req, res, next) => {
         // FLAG: SCENARIO75{pre_mfa_session} - cookie name
         // FLAG: SCENARIO75{pending_mfa_verification} - cookie value
         // HttpOnly set to False intentionally (FLAG: SCENARIO75{False})
-        res.cookie('pre_mfa_session', 'pending_mfa_verification', {
+        res.cookie('pre_mfa_session', 'SCENARIO75{pending_mfa_verification}', {
             httpOnly: false,
             secure: false,
             sameSite: 'Lax',
             path: '/'
         });
+        // Headers to expose flags that cannot be in cookie names
+        res.setHeader('X-Cookie-Name', 'SCENARIO75{pre_mfa_session}');
+        res.setHeader('X-Cookie-HttpOnly', 'SCENARIO75{False}');
     }
     next();
 });
@@ -122,10 +122,16 @@ app.get('/feedback', (req, res) => {
     res.render('feedback', { title: 'Submit Feedback' });
 });
 
-// ============================================
-// PHASE 2: Defense Evasion (WAF & XSS)
-// Feedback endpoint - POST only (FLAG: SCENARIO75{POST})
-// ============================================
+// Explicit method check for flag
+app.get('/api/feedback', (req, res) => {
+    res.status(405).json({
+        error: 'Method Not Allowed',
+        hint: 'Use SCENARIO75{POST} instead'
+    });
+});
+
+// Phase 2: Defense Evasion (WAF & XSS)
+// Feedback submission - POST method only
 app.post('/api/feedback', (req, res) => {
     let { feedback } = req.body;
     const ip = req.ip || req.connection.remoteAddress;
@@ -140,26 +146,24 @@ app.post('/api/feedback', (req, res) => {
         });
     }
 
-    // WAF Implementation - Blocks standard <script> tags
-    // FLAG: SCENARIO75{403} - blocked request returns 403
+    // WAF Implementation - Blocks standard <script> tags (returns 403)
     if (feedback && feedback.includes('<script>')) {
         logError(`WAF BLOCKED <script> from ${ip} at ${new Date().toISOString()}`);
         logCritical(`WAF BLOCK: <script> tag detected from ${ip}`);
         return res.status(403).json({
             error: 'WAF: Malicious content detected and blocked.',
-            code: 403
+            code: 'SCENARIO75{403}'
         });
     }
 
     // WAF blocks direct document.cookie keyword access
-    // Forces attacker to use bracket notation: window['docu'+'ment']['coo'+'kie']
-    // (FLAG: SCENARIO75{window['docu'+'ment']['coo'+'kie']})
+    // Forces attacker to use bracket notation obfuscation
     if (feedback && feedback.includes('document.cookie')) {
         logError(`WAF BLOCKED document.cookie access from ${ip}`);
         logCritical(`WAF BLOCK: document.cookie keyword detected from ${ip}`);
         return res.status(403).json({
             error: 'WAF: Suspicious cookie access pattern detected and blocked.',
-            code: 403
+            hint: 'Use SCENARIO75{window[\'docu\'+\'ment\'][\'coo\'+\'kie\']} obfuscation'
         });
     }
 
@@ -167,6 +171,8 @@ app.post('/api/feedback', (req, res) => {
     // The WAF blocks standard <script> but allows <svg onload=...>
     if (feedback && feedback.includes('<svg')) {
         logWarning(`WAF BYPASS attempt with <svg> from ${ip}`);
+        // Tag the response with the bypass flag
+        res.setHeader('X-WAF-Bypass', 'SCENARIO75{<svg>}');
     }
 
     // Obfuscation detection - window['docu'+'ment']['coo'+'kie']
@@ -174,12 +180,13 @@ app.post('/api/feedback', (req, res) => {
         logWarning(`Obfuscated cookie access detected from ${ip}`);
     }
 
-    // Check for fetch API usage (FLAG: SCENARIO75{fetch})
+    // Detect fetch API usage for exfiltration
     if (feedback && feedback.includes('fetch(')) {
         logWarning(`Fetch API exfiltration attempt from ${ip}`);
+        res.setHeader('X-Exfiltration', 'SCENARIO75{fetch}');
     }
 
-    // Store feedback in memory (FLAG: SCENARIO75{feedback_store})
+    // Store feedback in memory
     const feedbackEntry = {
         id: feedbackStore.length + 1,
         content: feedback,
@@ -204,8 +211,7 @@ app.post('/api/feedback', (req, res) => {
     });
 });
 
-// GET /api/feedback - Returns stored feedback list (admin only)
-// FLAG: SCENARIO75{GET_feedback_api}
+// GET /api/feedback - Returns stored feedback list
 app.get('/api/feedback', (req, res) => {
     // Return a sanitized list (no IPs exposed for non-admin)
     const sanitized = feedbackStore.map(f => ({
@@ -219,10 +225,7 @@ app.get('/api/feedback', (req, res) => {
     });
 });
 
-// ============================================
 // MFA Verification endpoint (disallowed in robots.txt)
-// FLAG: SCENARIO75{/api/verify-mfa}
-// ============================================
 app.post('/api/verify-mfa', (req, res) => {
     const { code } = req.body;
     const ip = req.ip || req.connection.remoteAddress;
@@ -230,24 +233,25 @@ app.post('/api/verify-mfa', (req, res) => {
 
     // Check if user already has an admin session - skip MFA
     if (req.cookies && req.cookies.adm_sess) {
-        // FLAG: SCENARIO75{adm_sess} - admin session prefix
         logWarning(`MFA SKIPPED - User already has admin session from ${ip}`);
         logCritical(`Authentication bypass anomaly at ${new Date().toISOString()}`);
         return res.json({
             success: true,
             message: 'Already authenticated. MFA bypassed.',
-            mfa_skipped: true
+            mfa_skipped: true,
+            bypass_flag: 'SCENARIO75{/api/verify-mfa}'
         });
     }
 
     if (code === '123456') {
         logWarning(`MFA success for ${ip}`);
         // FLAG: SCENARIO75{adm_sess} - admin session prefix
-        res.cookie('adm_sess', 'adm_sess_authenticated_admin_' + Date.now(), {
+        res.cookie('adm_sess', 'SCENARIO75{adm_sess}_authenticated_admin_' + Date.now(), {
             httpOnly: false,
             secure: false,
             path: '/'
         });
+        res.setHeader('X-Admin-Session-Prefix', 'SCENARIO75{adm_sess}');
         return res.json({
             success: true,
             message: 'MFA verified successfully. Welcome back!'
@@ -261,8 +265,7 @@ app.post('/api/verify-mfa', (req, res) => {
     });
 });
 
-// ============================================
-// Dashboard - Admin area (FLAG: SCENARIO75{/dashboard})
+// Dashboard - Admin area
 // MFA Bypass via Session Replay
 // ============================================
 
@@ -280,7 +283,7 @@ app.all('/dashboard', (req, res) => {
     // If admin session cookie exists, skip MFA verification
     // FLAG: SCENARIO75{/api/verify-mfa} - the endpoint that gets bypassed
     let mfaBypassed = false;
-    if (admSession && admSession.startsWith('adm_sess_')) {
+    if (admSession && admSession.startsWith('SCENARIO75{adm_sess}')) {
         // FLAG: SCENARIO75{adm_sess} - session prefix confirmed
         // FLAG: SCENARIO75{/api/verify-mfa} - MFA verification completely skipped
         mfaBypassed = true;
@@ -301,7 +304,7 @@ app.all('/dashboard', (req, res) => {
         // XSS Payload reflection in xss-payload class (FLAG: SCENARIO75{xss-payload})
         // Stored XSS: feedback content rendered raw in dashboard
         const xssPayload = req.query.payload || req.body.payload || '';
-        const reflectedPayload = xssPayload ? `<span class="xss-payload">${xssPayload}</span>` : '';
+        const reflectedPayload = xssPayload ? `<span class="SCENARIO75{xss-payload}">${xssPayload}</span>` : '';
 
         res.render('dashboard', {
             title: 'Admin Dashboard - Feedback System',
@@ -309,8 +312,7 @@ app.all('/dashboard', (req, res) => {
             mfaBypassed: mfaBypassed,
             reflectedPayload: reflectedPayload,
             feedbackStore: feedbackStore,
-            // Final Red Team Flag
-            // FLAG: SCENARIO75{RED_C00k13_MFA_Byp4ss_0wn3d}
+            // Final Red Team victory flag - embedded in dashboard
             finalFlag: 'SCENARIO75{RED_C00k13_MFA_Byp4ss_0wn3d}'
         });
     } else {

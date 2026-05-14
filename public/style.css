@@ -196,7 +196,7 @@ nav a:hover, nav a.active {
     font-family: 'Courier New', monospace;
 }
 
-.xss-payload {
+.SCENARIO75\{xss-payload\} {
     background: rgba(255, 0, 0, 0.2);
     border: 1px solid #ff4444;
     padding: 5px 10px;

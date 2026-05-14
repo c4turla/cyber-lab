@@ -2,3 +2,6 @@ node_modules/
 logs/
 .DS_Store
 .env
+prd.md
+help.md
+README.md

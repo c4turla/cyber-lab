@@ -5,3 +5,7 @@ npm-debug.log
 README.md
 .DS_Store
 logs
+prd.md
+help.md
+*.md
+!package.json
