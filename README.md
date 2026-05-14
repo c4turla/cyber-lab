@@ -40,28 +40,10 @@ The environment generates realistic telemetry for Blue Team incident response an
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                   Docker Container                       │
-│                                                         │
-│  ┌─────────────────┐      ┌────────────────────────┐   │
-│  │   Node.js App    │      │   SSH Server (OpenSSH) │   │
-│  │   Port 3075     │      │   Port 2275            │   │
-│  │                 │      │   User: analyst        │   │
-│  │  Vulnerabilities │      │   Pass: blue_team_rocks│   │
-│  │  - WAF Bypass    │      └────────────────────────┘   │
-│  │  - XSS           │                                    │
-│  │  - Session Replay│      ┌────────────────────────┐   │
-│  └─────────────────┘      │   Log Storage          │   │
-│                            │   /opt/admin/logs/     │   │
-│                            │   - access.log         │   │
-│                            │   - error.log          │   │
-│                            └────────────────────────┘   │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-         │                                    │
-         │ HTTP :3075                         │ SSH :2275
-         ▼                                    ▼
-   [Red Team Browser]                [Blue Team Analyst]
+- Node.js + Express
+- Docker / Docker Compose
+- Linux-based deployment
+- Access logs and error logs
 ```
 
 ---
