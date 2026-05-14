@@ -59,7 +59,7 @@ The environment generates realistic telemetry for Blue Team incident response an
 
 ```bash
 # Clone the repository
-git clone <your-repo-url> cyber-lab
+git clone https://github.com/c4turla/cyber-lab.git
 cd cyber-lab
 
 # Build and start the container
